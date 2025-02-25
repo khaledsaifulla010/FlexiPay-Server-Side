@@ -24,6 +24,19 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const sendMoneyCollections = client.db("FlexiPay").collection("send-money");
+    const usersCollections = client.db("FlexiPay").collection("users");
+    // POST A NEW USER //
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { mobileNumber: user.mobileNumber };
+      const existingUser = await usersCollections.findOne(query);
+      if (existingUser) {
+        res.send({ message: "User already exists", insertedId: null });
+      } else {
+        const result = await usersCollections.insertOne(user);
+        res.send(result);
+      }
+    });
 
     // POST A SEND MONEY //
 
