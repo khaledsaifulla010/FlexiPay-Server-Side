@@ -140,24 +140,41 @@ async function run() {
       const receiver = await usersCollections.findOne({
         mobileNumber: mobileNumber,
       });
-
-      // Calculate transaction fee
-
-      const totalDeduction = amount * 1.5;
-
-      // Update sender balance (deduct money)
+      // Find the Agent
+      const agent = await usersCollections.findOne({ accountType: "Agent" });
+      // Find the Admin
+      const admin = await usersCollections.findOne({ accountType: "Admin" });
+      // Calculate transaction fees
+      const totalFee = amount * 0.015;
+      const agentFee = amount + amount * 0.01;
+      const adminFee = amount * 0.005;
+      const totalDeduction = amount + totalFee;
+      // Update sender's balance (deduct money)
       const updatedSenderBalance = sender.myBalance - totalDeduction;
       await usersCollections.updateOne(
         { _id: new ObjectId(senderId) },
         { $set: { myBalance: updatedSenderBalance } }
       );
-
       // Update receiver balance (add money)
       const updatedReceiverBalance = receiver.myBalance + amount;
       await usersCollections.updateOne(
         { mobileNumber: mobileNumber },
         { $set: { myBalance: updatedReceiverBalance } }
       );
+      // Update Agent's balance (add agentFee)
+      const updatedAgentBalance = agent.myBalance + agentFee;
+      await usersCollections.updateOne(
+        { _id: new ObjectId(agent._id) },
+        { $set: { myBalance: updatedAgentBalance } }
+      );
+
+      // Update Admin's balance (add adminFee)
+      const updatedAdminBalance = admin.myBalance + adminFee;
+      await usersCollections.updateOne(
+        { _id: new ObjectId(admin._id) },
+        { $set: { myBalance: updatedAdminBalance } }
+      );
+
       //  Save Notification in Database
       const notificationResult = await notificationsCollections.insertOne({
         receiverId: receiver._id,
@@ -171,6 +188,9 @@ async function run() {
         success: true,
         senderNewBalance: updatedSenderBalance,
         receiverNewBalance: updatedReceiverBalance,
+        agentNewBalance: updatedAgentBalance,
+        adminNewBalance: updatedAdminBalance,
+        totalDeduction: totalDeduction,
         notificationResult: notificationResult,
       });
     });
