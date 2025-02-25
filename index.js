@@ -34,10 +34,18 @@ async function run() {
       res.send(result);
     });
 
+    //GET SEND MONEY INDIVIDUAL DATA //
+    app.get("/sendMoney", async (req, res) => {
+      const mobileNumber = req.query.mobileNumber;
+      const query = { mobileNumber: Number(mobileNumber) };
+      const result = await sendMoneyCollections.find(query).toArray();
+      res.send(result);
+    });
+
     // POST A NEW USER //
     app.post("/users", async (req, res) => {
       const user = req.body;
-      const query = { mobileNumber: user.mobileNumber };
+      const query = { email: user.email };
       const existingUser = await usersCollections.findOne(query);
       if (existingUser) {
         res.send({ message: "User already exists", insertedId: null });
@@ -50,25 +58,42 @@ async function run() {
     // POST A SEND MONEY //
 
     app.post("/sendMoney", async (req, res) => {
-      const { senderId, amount } = req.body;
-
+      const { senderId, amount, mobileNumber } = req.body;
+      // Insert the transaction record
       const result = await sendMoneyCollections.insertOne(req.body);
+
+      // Find sender by ID
       const sender = await usersCollections.findOne({
         _id: new ObjectId(senderId),
       });
+
+      // Find receiver by mobileNumber
+      const receiver = await usersCollections.findOne({
+        mobileNumber: mobileNumber,
+      });
+
+      // Calculate transaction fee
       const transactionFee = amount > 100 ? 5 : 0;
       const totalDeduction = amount + transactionFee;
 
-      const updatedBalance = sender.myBalance - totalDeduction;
-      const updateResult = await usersCollections.updateOne(
+      // Update sender balance (deduct money)
+      const updatedSenderBalance = sender.myBalance - totalDeduction;
+      await usersCollections.updateOne(
         { _id: new ObjectId(senderId) },
-        { $set: { myBalance: updatedBalance } }
+        { $set: { myBalance: updatedSenderBalance } }
       );
-      if (updateResult.modifiedCount > 0) {
-        res.send({ success: true, newBalance: updatedBalance });
-      } else {
-        res.status(500).send({ error: "Balance update failed!" });
-      }
+
+      // Update receiver balance (add money)
+      const updatedReceiverBalance = receiver.myBalance + amount;
+      await usersCollections.updateOne(
+        { mobileNumber: mobileNumber },
+        { $set: { myBalance: updatedReceiverBalance } }
+      );
+      res.send({
+        success: true,
+        senderNewBalance: updatedSenderBalance,
+        receiverNewBalance: updatedReceiverBalance,
+      });
     });
   } finally {
   }
