@@ -25,6 +25,9 @@ async function run() {
   try {
     const sendMoneyCollections = client.db("FlexiPay").collection("send-money");
     const usersCollections = client.db("FlexiPay").collection("users");
+    const notificationsCollections = client
+      .db("FlexiPay")
+      .collection("notification");
 
     //GET USER INDIVIDUAL DATA //
     app.get("/users", async (req, res) => {
@@ -40,6 +43,21 @@ async function run() {
       const query = { mobileNumber: Number(mobileNumber) };
       const result = await sendMoneyCollections.find(query).toArray();
       res.send(result);
+    });
+
+    // GET RECEIVER NOTIFICATION WHO GET THE MONEY //
+
+    app.get("/notifications", async (req, res) => {
+      const { receiverId } = req.query;
+      if (!receiverId || receiverId.length !== 24) {
+        return res.status(400).send({ error: "Invalid receiver ID" });
+      }
+      const notifications = await notificationsCollections
+        .find({ receiverId: new ObjectId(receiverId) })
+        .sort({ date: -1 })
+        .toArray();
+
+      res.send(notifications);
     });
 
     // POST A NEW USER //
@@ -89,10 +107,20 @@ async function run() {
         { mobileNumber: mobileNumber },
         { $set: { myBalance: updatedReceiverBalance } }
       );
+      //  Save Notification in Database
+      const notificationResult = await notificationsCollections.insertOne({
+        receiverId: receiver._id,
+        senderName: sender.name,
+        amount: amount,
+        message: `You have received ${amount} from ${sender.name}`,
+        date: new Date(),
+        isRead: false,
+      });
       res.send({
         success: true,
         senderNewBalance: updatedSenderBalance,
         receiverNewBalance: updatedReceiverBalance,
+        notificationResult: notificationResult,
       });
     });
   } finally {
