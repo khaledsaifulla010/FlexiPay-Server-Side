@@ -24,6 +24,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const sendMoneyCollections = client.db("FlexiPay").collection("send-money");
+    const cashoutCollections = client.db("FlexiPay").collection("cashout");
     const usersCollections = client.db("FlexiPay").collection("users");
     const notificationsCollections = client
       .db("FlexiPay")
@@ -93,6 +94,56 @@ async function run() {
       // Calculate transaction fee
       const transactionFee = amount > 100 ? 5 : 0;
       const totalDeduction = amount + transactionFee;
+
+      // Update sender balance (deduct money)
+      const updatedSenderBalance = sender.myBalance - totalDeduction;
+      await usersCollections.updateOne(
+        { _id: new ObjectId(senderId) },
+        { $set: { myBalance: updatedSenderBalance } }
+      );
+
+      // Update receiver balance (add money)
+      const updatedReceiverBalance = receiver.myBalance + amount;
+      await usersCollections.updateOne(
+        { mobileNumber: mobileNumber },
+        { $set: { myBalance: updatedReceiverBalance } }
+      );
+      //  Save Notification in Database
+      const notificationResult = await notificationsCollections.insertOne({
+        receiverId: receiver._id,
+        senderName: sender.name,
+        amount: amount,
+        message: `You have received ${amount} from ${sender.name}`,
+        date: new Date(),
+        isRead: false,
+      });
+      res.send({
+        success: true,
+        senderNewBalance: updatedSenderBalance,
+        receiverNewBalance: updatedReceiverBalance,
+        notificationResult: notificationResult,
+      });
+    });
+
+    // POST A CASH OUT //
+    app.post("/cashout", async (req, res) => {
+      const { senderId, amount, mobileNumber } = req.body;
+      // Insert the transaction record
+      const result = await cashoutCollections.insertOne(req.body);
+
+      // Find sender by ID
+      const sender = await usersCollections.findOne({
+        _id: new ObjectId(senderId),
+      });
+
+      // Find receiver by mobileNumber
+      const receiver = await usersCollections.findOne({
+        mobileNumber: mobileNumber,
+      });
+
+      // Calculate transaction fee
+
+      const totalDeduction = amount * 1.5;
 
       // Update sender balance (deduct money)
       const updatedSenderBalance = sender.myBalance - totalDeduction;
