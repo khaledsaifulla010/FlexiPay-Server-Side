@@ -23,6 +23,15 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    const sendMoneyCollections = client.db("FlexiPay").collection("send-money");
+
+    // POST A SEND MONEY //
+
+    app.post("/sendMoney", async (req, res) => {
+      const query = req.body;
+      const result = await sendMoneyCollections.insertOne(query);
+      res.send(result);
+    });
   } finally {
   }
 }
