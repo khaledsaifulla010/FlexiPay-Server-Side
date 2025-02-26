@@ -33,6 +33,9 @@ async function run() {
     const requestedAgentCollections = client
       .db("FlexiPay")
       .collection("requested-agents");
+    const cashRequestedCollections = client
+      .db("FlexiPay")
+      .collection("cash-request");
 
     //GET USER INDIVIDUAL DATA //
     app.get("/users", async (req, res) => {
@@ -128,6 +131,12 @@ async function run() {
     //GET ALL USERS DATA FOR ADMIN //
     app.get("/users/allUsers", async (req, res) => {
       const result = await usersCollections.find().toArray();
+      res.send(result);
+    });
+
+    // GET ALL REQUEST FOR CASH FROM ADMIN //
+    app.get("/allCashRequest", async (req, res) => {
+      const result = await cashRequestedCollections.find().toArray();
       res.send(result);
     });
 
@@ -273,6 +282,15 @@ async function run() {
       res.send(result);
     });
 
+    // POST A REQUEST FOR CASH AS A AGENT //
+
+    app.post("/cashRequest", async (req, res) => {
+      const cashRequest = req.body;
+      const result = await cashRequestedCollections.insertOne(cashRequest);
+      res.send(result);
+    });
+
+    // PUT REQUEST AN AGENT STATUS //
     app.put("/requestedAgent/:id", async (req, res) => {
       const agentId = req.params.id;
       const { status } = req.body;
