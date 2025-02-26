@@ -49,13 +49,20 @@ async function run() {
       const result = await transcactionCollections.find(query).toArray();
       res.send(result);
     });
-    //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
+    //GET ALL TRANSACTIONS  DATA FOR ADMIN //
     app.get("/transactions/Individual/agent", async (req, res) => {
       const mobileNumber = req.query.mobileNumber;
       const query = { mobileNumber: Number(mobileNumber) };
       const result = await transcactionCollections.find(query).toArray();
       res.send(result);
     });
+
+    //GET ALL TRANSACTIONS DATA FOR ADMIN //
+    app.get("/allRequestedAgent", async (req, res) => {
+      const result = await requestedAgentCollections.find().toArray();
+      res.send(result);
+    });
+
     //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
     app.get("/transactions/allTransactions", async (req, res) => {
       const result = await transcactionCollections.find().toArray();
