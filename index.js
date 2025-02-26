@@ -89,6 +89,18 @@ async function run() {
 
       res.send({ isUser });
     });
+    // GET INDIVIDAUL USER WHO IS Admin //
+
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersCollections.findOne(query);
+      let isAdmin = false;
+      if (user) {
+        isAdmin = user?.accountType === "Admin";
+      }
+      res.send({ isAdmin });
+    });
 
     // POST A NEW USER //
     app.post("/users", async (req, res) => {
