@@ -89,7 +89,7 @@ async function run() {
     };
 
     //GET USER INDIVIDUAL DATA //
-    app.get("/users", verifyToken, async (req, res) => {
+    app.get("/users", async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await usersCollections.findOne(query);
@@ -97,14 +97,14 @@ async function run() {
     });
 
     //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
-    app.get("/transactions/Individual/user", verifyToken, async (req, res) => {
+    app.get("/transactions/Individual/user", async (req, res) => {
       const senderMobileNumber = req.query.senderMobileNumber;
       const query = { senderMobileNumber: Number(senderMobileNumber) };
       const result = await transcactionCollections.find(query).toArray();
       res.send(result);
     });
     //GET ALL TRANSACTIONS  DATA FOR AGENT //
-    app.get("/transactions/Individual/agent", verifyToken, async (req, res) => {
+    app.get("/transactions/Individual/agent", async (req, res) => {
       const mobileNumber = req.query.mobileNumber;
       const query = { mobileNumber: Number(mobileNumber) };
       const result = await transcactionCollections.find(query).toArray();
@@ -112,20 +112,20 @@ async function run() {
     });
 
     //GET ALL TRANSACTIONS DATA FOR ADMIN //
-    app.get("/allRequestedAgent", verifyToken, async (req, res) => {
+    app.get("/allRequestedAgent", async (req, res) => {
       const result = await requestedAgentCollections.find().toArray();
       res.send(result);
     });
 
     //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
-    app.get("/transactions/allTransactions", verifyToken, async (req, res) => {
+    app.get("/transactions/allTransactions", async (req, res) => {
       const result = await transcactionCollections.find().toArray();
       res.send(result);
     });
 
     // GET RECEIVER NOTIFICATION WHO GET THE MONEY //
 
-    app.get("/notifications", verifyToken, async (req, res) => {
+    app.get("/notifications", async (req, res) => {
       const { receiverId } = req.query;
       if (!receiverId || receiverId.length !== 24) {
         return res.status(400).send({ error: "Invalid receiver ID" });
@@ -180,13 +180,13 @@ async function run() {
     });
 
     //GET ALL USERS DATA FOR ADMIN //
-    app.get("/users/allUsers", verifyToken, async (req, res) => {
+    app.get("/users/allUsers", async (req, res) => {
       const result = await usersCollections.find().toArray();
       res.send(result);
     });
 
     // GET ALL REQUEST FOR CASH FROM ADMIN //
-    app.get("/allCashRequest", verifyToken, async (req, res) => {
+    app.get("/allCashRequest", async (req, res) => {
       const result = await cashRequestedCollections.find().toArray();
       res.send(result);
     });
