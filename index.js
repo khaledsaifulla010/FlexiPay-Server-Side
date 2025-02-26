@@ -56,6 +56,11 @@ async function run() {
       const result = await transcactionCollections.find(query).toArray();
       res.send(result);
     });
+    //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
+    app.get("/transactions/allTransactions", async (req, res) => {
+      const result = await transcactionCollections.find().toArray();
+      res.send(result);
+    });
 
     // GET RECEIVER NOTIFICATION WHO GET THE MONEY //
 
