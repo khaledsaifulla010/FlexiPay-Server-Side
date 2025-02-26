@@ -272,6 +272,20 @@ async function run() {
       const result = await requestedAgentCollections.insertOne(requestedAgent);
       res.send(result);
     });
+
+    app.put("/requestedAgent/:id", async (req, res) => {
+      const agentId = req.params.id;
+      const { status } = req.body;
+      const agent = await requestedAgentCollections.findOne({
+        _id: new ObjectId(agentId),
+      });
+      agent.status = status;
+      const result = await requestedAgentCollections.updateOne(
+        { _id: new ObjectId(agentId) },
+        { $set: { status: status } }
+      );
+      res.send(result);
+    });
   } finally {
   }
 }
