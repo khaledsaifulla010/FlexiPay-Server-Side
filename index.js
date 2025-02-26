@@ -304,6 +304,26 @@ async function run() {
       );
       res.send(result);
     });
+    // UPADTE AGENT BALANCE //
+    app.put("/cashRequest/:id", async (req, res) => {
+      const senderId = req.params.id;
+      const { agentBalance } = req.body;
+      // Update agentBalance in cashRequestedCollections
+      const result = await cashRequestedCollections.updateOne(
+        { agentId: senderId },
+        { $set: { agentBalance: agentBalance } }
+      );
+      // Update myBalance in usersCollections
+      const userUpdate = await usersCollections.updateOne(
+        { _id: new ObjectId(senderId) },
+        { $set: { myBalance: agentBalance } }
+      );
+
+      res.send({
+        result: { modifiedCount: result.modifiedCount },
+        userUpdate: { modifiedCount: userUpdate.modifiedCount },
+      });
+    });
   } finally {
   }
 }
