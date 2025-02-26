@@ -274,6 +274,54 @@ async function run() {
       });
     });
 
+    // POST A CASH IN //
+
+    app.post("/cashIn", async (req, res) => {
+      const { senderId, amount, mobileNumber } = req.body;
+      // Insert the transaction record
+      const result = await transcactionCollections.insertOne(req.body);
+
+      // Find sender by ID
+      const sender = await usersCollections.findOne({
+        _id: new ObjectId(senderId),
+      });
+
+      // Find receiver by mobileNumber
+      const receiver = await usersCollections.findOne({
+        mobileNumber: mobileNumber,
+      });
+
+      // Update sender balance (deduct money)
+      const updatedSenderBalance = Number(sender.myBalance) - Number(amount);
+      await usersCollections.updateOne(
+        { _id: new ObjectId(senderId) },
+        { $set: { myBalance: updatedSenderBalance } }
+      );
+
+      // Update receiver balance (add money)
+      const updatedReceiverBalance =
+        Number(receiver.myBalance) + Number(amount);
+      await usersCollections.updateOne(
+        { mobileNumber: mobileNumber },
+        { $set: { myBalance: updatedReceiverBalance } }
+      );
+      //  Save Notification in Database
+      const notificationResult = await notificationsCollections.insertOne({
+        receiverId: receiver._id,
+        senderName: sender.name,
+        amount: amount,
+        message: `You have received ${amount} from ${sender.name}`,
+        date: new Date(),
+        isRead: false,
+      });
+      res.send({
+        success: true,
+        senderNewBalance: updatedSenderBalance,
+        receiverNewBalance: updatedReceiverBalance,
+        notificationResult: notificationResult,
+      });
+    });
+
     // POST A REQUEST AN AGENT //
 
     app.post("/requestedAgent", async (req, res) => {
