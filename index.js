@@ -23,6 +23,9 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    const transcactionCollections = client
+      .db("FlexiPay")
+      .collection("transactions");
     const sendMoneyCollections = client.db("FlexiPay").collection("send-money");
     const cashoutCollections = client.db("FlexiPay").collection("cashout");
     const usersCollections = client.db("FlexiPay").collection("users");
@@ -38,11 +41,18 @@ async function run() {
       res.send(result);
     });
 
-    //GET SEND MONEY INDIVIDUAL DATA //
-    app.get("/sendMoney", async (req, res) => {
+    //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
+    app.get("/transactions/Individual/user", async (req, res) => {
+      const senderMobileNumber = req.query.senderMobileNumber;
+      const query = { senderMobileNumber: Number(senderMobileNumber) };
+      const result = await transcactionCollections.find(query).toArray();
+      res.send(result);
+    });
+    //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
+    app.get("/transactions/Individual/agent", async (req, res) => {
       const mobileNumber = req.query.mobileNumber;
       const query = { mobileNumber: Number(mobileNumber) };
-      const result = await sendMoneyCollections.find(query).toArray();
+      const result = await transcactionCollections.find(query).toArray();
       res.send(result);
     });
 
@@ -89,7 +99,7 @@ async function run() {
 
       res.send({ isUser });
     });
-    // GET INDIVIDAUL USER WHO IS Admin //
+    // GET INDIVIDAUL USER WHO IS ADMIN //
 
     app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
@@ -100,6 +110,12 @@ async function run() {
         isAdmin = user?.accountType === "Admin";
       }
       res.send({ isAdmin });
+    });
+
+    //GET ALL USERS DATA FOR ADMIN //
+    app.get("/users/allUsers", async (req, res) => {
+      const result = await usersCollections.find().toArray();
+      res.send(result);
     });
 
     // POST A NEW USER //
@@ -120,7 +136,7 @@ async function run() {
     app.post("/sendMoney", async (req, res) => {
       const { senderId, amount, mobileNumber } = req.body;
       // Insert the transaction record
-      const result = await sendMoneyCollections.insertOne(req.body);
+      const result = await transcactionCollections.insertOne(req.body);
 
       // Find sender by ID
       const sender = await usersCollections.findOne({
@@ -170,7 +186,7 @@ async function run() {
     app.post("/cashout", async (req, res) => {
       const { senderId, amount, mobileNumber } = req.body;
       // Insert the transaction record
-      const result = await cashoutCollections.insertOne(req.body);
+      const result = await transcactionCollections.insertOne(req.body);
 
       // Find sender by ID
       const sender = await usersCollections.findOne({
