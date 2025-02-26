@@ -2,13 +2,25 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const app = express();
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 
 // Middlewares //
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://flexipay-6694e.web.app",
+      "https://flexipay-6694e.firebaseapp.com",
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 // Connect With MongoDB //
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ugbxhsw.mongodb.net/?appName=Cluster0`;
@@ -37,8 +49,47 @@ async function run() {
       .db("FlexiPay")
       .collection("cash-request");
 
+    // JWT RELATED API //
+
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "3d",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+    app.post("/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+    const verifyToken = (req, res, next) => {
+      const token = req?.cookies?.token;
+      if (!token) {
+        return res.status(401).send({ message: "Unothorized User Access" });
+      }
+
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "Unothorized User Access" });
+        }
+        req.user = decoded;
+        next();
+      });
+    };
+
     //GET USER INDIVIDUAL DATA //
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await usersCollections.findOne(query);
@@ -46,14 +97,14 @@ async function run() {
     });
 
     //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
-    app.get("/transactions/Individual/user", async (req, res) => {
+    app.get("/transactions/Individual/user", verifyToken, async (req, res) => {
       const senderMobileNumber = req.query.senderMobileNumber;
       const query = { senderMobileNumber: Number(senderMobileNumber) };
       const result = await transcactionCollections.find(query).toArray();
       res.send(result);
     });
-    //GET ALL TRANSACTIONS  DATA FOR ADMIN //
-    app.get("/transactions/Individual/agent", async (req, res) => {
+    //GET ALL TRANSACTIONS  DATA FOR AGENT //
+    app.get("/transactions/Individual/agent", verifyToken, async (req, res) => {
       const mobileNumber = req.query.mobileNumber;
       const query = { mobileNumber: Number(mobileNumber) };
       const result = await transcactionCollections.find(query).toArray();
@@ -61,20 +112,20 @@ async function run() {
     });
 
     //GET ALL TRANSACTIONS DATA FOR ADMIN //
-    app.get("/allRequestedAgent", async (req, res) => {
+    app.get("/allRequestedAgent", verifyToken, async (req, res) => {
       const result = await requestedAgentCollections.find().toArray();
       res.send(result);
     });
 
     //GET ALL TRANSACTIONS INDIVIDUAL DATA FOR USER //
-    app.get("/transactions/allTransactions", async (req, res) => {
+    app.get("/transactions/allTransactions", verifyToken, async (req, res) => {
       const result = await transcactionCollections.find().toArray();
       res.send(result);
     });
 
     // GET RECEIVER NOTIFICATION WHO GET THE MONEY //
 
-    app.get("/notifications", async (req, res) => {
+    app.get("/notifications", verifyToken, async (req, res) => {
       const { receiverId } = req.query;
       if (!receiverId || receiverId.length !== 24) {
         return res.status(400).send({ error: "Invalid receiver ID" });
@@ -129,13 +180,13 @@ async function run() {
     });
 
     //GET ALL USERS DATA FOR ADMIN //
-    app.get("/users/allUsers", async (req, res) => {
+    app.get("/users/allUsers", verifyToken, async (req, res) => {
       const result = await usersCollections.find().toArray();
       res.send(result);
     });
 
     // GET ALL REQUEST FOR CASH FROM ADMIN //
-    app.get("/allCashRequest", async (req, res) => {
+    app.get("/allCashRequest", verifyToken, async (req, res) => {
       const result = await cashRequestedCollections.find().toArray();
       res.send(result);
     });
