@@ -61,6 +61,21 @@ async function run() {
       res.send(notifications);
     });
 
+    // GET INDIVIDAUL USER WHO IS AGENT //
+
+    app.get("/users/agent/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersCollections.findOne(query);
+
+      let isAgent = false;
+      if (user) {
+        isAgent = user?.accountType === "Agent";
+      }
+
+      res.send({ isAgent });
+    });
+
     // POST A NEW USER //
     app.post("/users", async (req, res) => {
       const user = req.body;
