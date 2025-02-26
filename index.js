@@ -26,12 +26,13 @@ async function run() {
     const transcactionCollections = client
       .db("FlexiPay")
       .collection("transactions");
-    const sendMoneyCollections = client.db("FlexiPay").collection("send-money");
-    const cashoutCollections = client.db("FlexiPay").collection("cashout");
     const usersCollections = client.db("FlexiPay").collection("users");
     const notificationsCollections = client
       .db("FlexiPay")
       .collection("notification");
+    const requestedAgentCollections = client
+      .db("FlexiPay")
+      .collection("requested-agents");
 
     //GET USER INDIVIDUAL DATA //
     app.get("/users", async (req, res) => {
@@ -250,6 +251,14 @@ async function run() {
         totalDeduction: totalDeduction,
         notificationResult: notificationResult,
       });
+    });
+
+    // POST A REQUEST AN AGENT //
+
+    app.post("/requestedAgent", async (req, res) => {
+      const requestedAgent = req.body;
+      const result = await requestedAgentCollections.insertOne(requestedAgent);
+      res.send(result);
     });
   } finally {
   }
