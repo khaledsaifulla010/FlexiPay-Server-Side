@@ -75,6 +75,20 @@ async function run() {
 
       res.send({ isAgent });
     });
+    // GET INDIVIDAUL USER WHO IS USER //
+
+    app.get("/users/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersCollections.findOne(query);
+
+      let isUser = false;
+      if (user) {
+        isUser = user?.accountType === "User";
+      }
+
+      res.send({ isUser });
+    });
 
     // POST A NEW USER //
     app.post("/users", async (req, res) => {
